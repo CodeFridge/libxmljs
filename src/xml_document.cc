@@ -144,12 +144,16 @@ XmlDocument::FromHtml(const v8::Arguments& args)
     char * encoding = NULL;
     v8::String::Utf8Value * encoding_p = NULL;
 
+    v8::Local<v8::Value> htmlParserOption = v8::Integer::New(0);
+
     if (args.Length() > 1 && args[1]->IsObject()) {
         v8::Local<v8::Object> options = args[1]->ToObject();
         v8::Local<v8::Value>  urlOpt  = options->Get(
             v8::String::NewSymbol("baseUrl"));
         v8::Local<v8::Value>  encOpt  = options->Get(
             v8::String::NewSymbol("encoding"));
+        htmlParserOption  = options->Get(
+            v8::String::NewSymbol("htmlParserOption"));
 
         if (urlOpt->IsString()) {
             baseUrl_p = new v8::String::Utf8Value(urlOpt->ToString());
@@ -159,6 +163,10 @@ XmlDocument::FromHtml(const v8::Arguments& args)
             encoding_p = new v8::String::Utf8Value(encOpt->ToString());
             encoding = **encoding_p;
         }
+    } 
+
+    if (!htmlParserOption->IsNumber()) {
+      htmlParserOption = v8::Integer::New(0);
     }
 
     v8::Local<v8::Array> errors = v8::Array::New();
@@ -170,13 +178,13 @@ XmlDocument::FromHtml(const v8::Arguments& args)
     if (!node::Buffer::HasInstance(args[0])) {
         // Parse a string
         v8::String::Utf8Value str(args[0]->ToString());
-        doc = htmlReadMemory(*str, str.length(), baseUrl, encoding, 0);
+        doc = htmlReadMemory(*str, str.length(), baseUrl, encoding, htmlParserOption->IntegerValue());
     }
     else {
         // Parse a buffer
         v8::Local<v8::Object> buf = args[0]->ToObject();
         doc = htmlReadMemory(node::Buffer::Data(buf), node::Buffer::Length(buf),
-                            baseUrl, encoding, 0);
+                            baseUrl, encoding, htmlParserOption->IntegerValue());
     }
 
     xmlSetStructuredErrorFunc(NULL, NULL);
