@@ -179,6 +179,8 @@ XmlDocument::FromHtml(const v8::Arguments& args)
         v8::String::NewSymbol("baseUrl"));
     v8::Local<v8::Value>  encodingOpt = options->Get(
         v8::String::NewSymbol("encoding"));
+    v8::Local<v8::Value>  htmlParserOpt = options->Get(
+        v8::String::NewSymbol("htmlParserOption"));
 
     // the base URL that will be used for this HTML parsed document
     v8::String::Utf8Value baseUrl_(baseUrlOpt->ToString());
@@ -196,6 +198,10 @@ XmlDocument::FromHtml(const v8::Arguments& args)
         encoding = NULL;
     }
 
+    if (!htmlParserOpt->IsNumber()) {
+      htmlParserOpt = v8::Integer::New(0);
+    }
+
     v8::Local<v8::Array> errors = v8::Array::New();
     xmlResetLastError();
     xmlSetStructuredErrorFunc(reinterpret_cast<void *>(*errors),
@@ -205,13 +211,13 @@ XmlDocument::FromHtml(const v8::Arguments& args)
     if (!node::Buffer::HasInstance(args[0])) {
         // Parse a string
         v8::String::Utf8Value str(args[0]->ToString());
-        doc = htmlReadMemory(*str, str.length(), baseUrl, encoding, 0);
+        doc = htmlReadMemory(*str, str.length(), baseUrl, encoding, htmlParserOpt->IntegerValue());
     }
     else {
         // Parse a buffer
         v8::Local<v8::Object> buf = args[0]->ToObject();
         doc = htmlReadMemory(node::Buffer::Data(buf), node::Buffer::Length(buf),
-                            baseUrl, encoding, 0);
+                            baseUrl, encoding, htmlParserOpt->IntegerValue());
     }
 
     xmlSetStructuredErrorFunc(NULL, NULL);
